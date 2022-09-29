@@ -1,252 +1,287 @@
-# rustfmt [![Build Status](https://travis-ci.com/rust-lang/rustfmt.svg?branch=master)](https://travis-ci.com/rust-lang/rustfmt) [![Build Status](https://ci.appveyor.com/api/projects/status/github/rust-lang/rustfmt?svg=true)](https://ci.appveyor.com/project/rust-lang-libs/rustfmt) [![crates.io](https://img.shields.io/crates/v/rustfmt-nightly.svg)](https://crates.io/crates/rustfmt-nightly) [![Travis Configuration Status](https://img.shields.io/travis/davidalber/rustfmt-travis.svg?label=travis%20example)](https://travis-ci.org/davidalber/rustfmt-travis)
+# The Rust Programming Language
 
-A tool for formatting Rust code according to style guidelines.
+This is the main source code repository for [Rust]. It contains the compiler,
+standard library, and documentation.
 
-If you'd like to help out (and you should, it's a fun project!), see
-[Contributing.md](Contributing.md) and our [Code of
-Conduct](CODE_OF_CONDUCT.md).
+[Rust]: https://www.rust-lang.org
 
-You can use rustfmt in Travis CI builds. We provide a minimal Travis CI
-configuration (see [here](#checking-style-on-a-ci-server)) and verify its status
-using another repository. The status of that repository's build is reported by
-the "travis example" badge above.
+**Note: this README is for _users_ rather than _contributors_.
+If you wish to _contribute_ to the compiler, you should read the
+[Getting Started][gettingstarted] section of the rustc-dev-guide instead.
+You can ask for help in the [#new members Zulip stream][new-members].**
 
-## Quick start
+[new-members]: https://rust-lang.zulipchat.com/#narrow/stream/122652-new-members
 
-You can run `rustfmt` with Rust 1.24 and above.
+## Quick Start
 
-### On the Stable toolchain
+Read ["Installation"] from [The Book].
 
-To install:
+["Installation"]: https://doc.rust-lang.org/book/ch01-01-installation.html
+[The Book]: https://doc.rust-lang.org/book/index.html
 
-```sh
-rustup component add rustfmt
-```
+## Installing from Source
 
-To run on a cargo project in the current working directory:
+The Rust build system uses a Python script called `x.py` to build the compiler,
+which manages the bootstrapping process. It lives at the root of the project.
 
-```sh
-cargo fmt
-```
-
-### On the Nightly toolchain
-
-For the latest and greatest `rustfmt`, nightly is required.
-
-To install:
+The `x.py` command can be run directly on most systems in the following format:
 
 ```sh
-rustup component add rustfmt --toolchain nightly
+./x.py <subcommand> [flags]
 ```
 
-To run on a cargo project in the current working directory:
+This is how the documentation and examples assume you are running `x.py`.
+
+Systems such as Ubuntu 20.04 LTS do not create the necessary `python` command by default when Python is installed that allows `x.py` to be run directly. In that case, you can either create a symlink for `python` (Ubuntu provides the `python-is-python3` package for this), or run `x.py` using Python itself:
 
 ```sh
-cargo +nightly fmt
+# Python 3
+python3 x.py <subcommand> [flags]
+
+# Python 2.7
+python2.7 x.py <subcommand> [flags]
 ```
 
-## Limitations
+More information about `x.py` can be found
+by running it with the `--help` flag or reading the [rustc dev guide][rustcguidebuild].
 
-Rustfmt tries to work on as much Rust code as possible. Sometimes, the code
-doesn't even need to compile! In general, we are looking to limit areas of
-instability; in particular, post-1.0, the formatting of most code should not
-change as Rustfmt improves. However, there are some things that Rustfmt can't
-do or can't do well (and thus where formatting might change significantly,
-even post-1.0). We would like to reduce the list of limitations over time.
+[gettingstarted]: https://rustc-dev-guide.rust-lang.org/getting-started.html
+[rustcguidebuild]: https://rustc-dev-guide.rust-lang.org/building/how-to-build-and-run.html
 
-The following list enumerates areas where Rustfmt does not work or where the
-stability guarantees do not apply (we don't make a distinction between the two
-because in the future Rustfmt might work on code where it currently does not):
+### Building on a Unix-like system
+1. Make sure you have installed the dependencies:
 
-* a program where any part of the program does not parse (parsing is an early
-  stage of compilation and in Rust includes macro expansion).
-* Macro declarations and uses (current status: some macro declarations and uses
-  are formatted).
-* Comments, including any AST node with a comment 'inside' (Rustfmt does not
-  currently attempt to format comments, it does format code with comments inside, but that formatting may change in the future).
-* Rust code in code blocks in comments.
-* Any fragment of a program (i.e., stability guarantees only apply to whole
-  programs, even where fragments of a program can be formatted today).
-* Code containing non-ascii unicode characters (we believe Rustfmt mostly works
-  here, but do not have the test coverage or experience to be 100% sure).
-* Bugs in Rustfmt (like any software, Rustfmt has bugs, we do not consider bug
-  fixes to break our stability guarantees).
+   * `g++` 5.1 or later or `clang++` 3.5 or later
+   * `python` 3 or 2.7
+   * GNU `make` 3.81 or later
+   * `cmake` 3.13.4 or later
+   * `ninja`
+   * `curl`
+   * `git`
+   * `ssl` which comes in `libssl-dev` or `openssl-devel`
+   * `pkg-config` if you are compiling on Linux and targeting Linux
 
+2. Clone the [source] with `git`:
 
-## Installation
+   ```sh
+   git clone https://github.com/rust-lang/rust.git
+   cd rust
+   ```
 
-```sh
-rustup component add rustfmt
-```
+[source]: https://github.com/rust-lang/rust
 
-## Installing from source
+3. Configure the build settings:
 
-To install from source (nightly required), first checkout to the tag or branch you want to install, then issue
+    The Rust build system uses a file named `config.toml` in the root of the
+    source tree to determine various configuration settings for the build.
+    Copy the default `config.toml.example` to `config.toml` to get started.
 
-```sh
-cargo install --path .
-```
-
-This will install `rustfmt` in your `~/.cargo/bin`. Make sure to add `~/.cargo/bin` directory to
-your PATH variable.
-
-
-## Running
-
-You can run Rustfmt by just typing `rustfmt filename` if you used `cargo
-install`. This runs rustfmt on the given file, if the file includes out of line
-modules, then we reformat those too. So to run on a whole module or crate, you
-just need to run on the root file (usually mod.rs or lib.rs). Rustfmt can also
-read data from stdin. Alternatively, you can use `cargo fmt` to format all
-binary and library targets of your crate.
-
-You can run `rustfmt --help` for information about available arguments.
-The easiest way to run rustfmt against a project is with `cargo fmt`. `cargo fmt` works on both
-single-crate projects and [cargo workspaces](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html).
-Please see `cargo fmt --help` for usage information.
-
-You can specify the path to your own `rustfmt` binary for cargo to use by setting the`RUSTFMT` 
-environment variable. This was added in v1.4.22, so you must have this version or newer to leverage this feature (`cargo fmt --version`)
-
-### Running `rustfmt` directly
-
-To format individual files or arbitrary codes from stdin, the `rustfmt` binary should be used. Some
-examples follow:
-
-- `rustfmt lib.rs main.rs` will format "lib.rs" and "main.rs" in place
-- `rustfmt` will read a code from stdin and write formatting to stdout
-  - `echo "fn     main() {}" | rustfmt` would emit "fn main() {}".
-
-For more information, including arguments and emit options, see `rustfmt --help`.
-
-### Verifying code is formatted
-
-When running with `--check`, Rustfmt will exit with `0` if Rustfmt would not
-make any formatting changes to the input, and `1` if Rustfmt would make changes.
-In other modes, Rustfmt will exit with `1` if there was some error during
-formatting (for example a parsing or internal error) and `0` if formatting
-completed without error (whether or not changes were made).
-
-
-
-## Running Rustfmt from your editor
-
-* [Vim](https://github.com/rust-lang/rust.vim#formatting-with-rustfmt)
-* [Emacs](https://github.com/rust-lang/rust-mode)
-* [Sublime Text 3](https://packagecontrol.io/packages/RustFmt)
-* [Atom](atom.md)
-* [Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
-* [IntelliJ or CLion](intellij.md)
-
-
-## Checking style on a CI server
-
-To keep your code base consistently formatted, it can be helpful to fail the CI build
-when a pull request contains unformatted code. Using `--check` instructs
-rustfmt to exit with an error code if the input is not formatted correctly.
-It will also print any found differences. (Older versions of Rustfmt don't
-support `--check`, use `--write-mode diff`).
-
-A minimal Travis setup could look like this (requires Rust 1.31.0 or greater):
-
-```yaml
-language: rust
-before_script:
-- rustup component add rustfmt
-script:
-- cargo build
-- cargo test
-- cargo fmt --all -- --check
-```
-
-See [this blog post](https://medium.com/@ag_dubs/enforcing-style-in-ci-for-rust-projects-18f6b09ec69d)
-for more info.
-
-## How to build and test
-
-`cargo build` to build.
-
-`cargo test` to run all tests.
-
-To run rustfmt after this, use `cargo run --bin rustfmt -- filename`. See the
-notes above on running rustfmt.
-
-
-## Configuring Rustfmt
-
-Rustfmt is designed to be very configurable. You can create a TOML file called
-`rustfmt.toml` or `.rustfmt.toml`, place it in the project or any other parent
-directory and it will apply the options in that file. See `rustfmt
---help=config` for the options which are available, or if you prefer to see
-visual style previews, [GitHub page](https://rust-lang.github.io/rustfmt/).
-
-By default, Rustfmt uses a style which conforms to the [Rust style guide][style
-guide] that has been formalized through the [style RFC
-process][fmt rfcs].
-
-Configuration options are either stable or unstable. Stable options can always
-be used, while unstable ones are only available on a nightly toolchain, and opt-in.
-See [GitHub page](https://rust-lang.github.io/rustfmt/) for details.
-
-### Rust's Editions
-
-Rustfmt is able to pick up the edition used by reading the `Cargo.toml` file if
-executed through the Cargo's formatting tool `cargo fmt`. Otherwise, the edition
-needs to be specified in `rustfmt.toml`, e.g., with `edition = "2018"`.
-
-## Tips
-
-* For things you do not want rustfmt to mangle, use `#[rustfmt::skip]`
-* To prevent rustfmt from formatting a macro or an attribute,
-  use `#[rustfmt::skip::macros(target_macro_name)]` or
-  `#[rustfmt::skip::attributes(target_attribute_name)]`
-
-  Example:
-
-    ```rust
-    #![rustfmt::skip::attributes(custom_attribute)]
-
-    #[custom_attribute(formatting , here , should , be , Skipped)]
-    #[rustfmt::skip::macros(html)]
-    fn main() {
-        let macro_result1 = html! { <div>
-    Hello</div>
-        }.to_string();
+    ```sh
+    cp config.toml.example config.toml
     ```
-* When you run rustfmt, place a file named `rustfmt.toml` or `.rustfmt.toml` in
-  target file directory or its parents to override the default settings of
-  rustfmt. You can generate a file containing the default configuration with
-  `rustfmt --print-config default rustfmt.toml` and customize as needed.
-* After successful compilation, a `rustfmt` executable can be found in the
-  target directory.
-* If you're having issues compiling Rustfmt (or compile errors when trying to
-  install), make sure you have the most recent version of Rust installed.
 
-* You can change the way rustfmt emits the changes with the --emit flag:
+    If you plan to use `x.py install` to create an installation, it is recommended
+    that you set the `prefix` value in the `[install]` section to a directory.
 
-  Example:
+    Create an install directory if you are not installing in the default directory.
 
-  ```sh
-  cargo fmt -- --emit files
-  ```
+4. Build and install:
 
-  Options:
+    ```sh
+    ./x.py build && ./x.py install
+    ```
 
-  | Flag |Description| Nightly Only |
-  |:---:|:---:|:---:|
-  | files | overwrites output to files | No |
-  | stdout | writes output to stdout | No |
-  | coverage | displays how much of the input file was processed | Yes |
-  | checkstyle | emits in a checkstyle format | Yes |
-  | json | emits diffs in a json format | Yes |
+    When complete, `./x.py install` will place several programs into
+    `$PREFIX/bin`: `rustc`, the Rust compiler, and `rustdoc`, the
+    API-documentation tool. This install does not include [Cargo],
+    Rust's package manager. To build and install Cargo, you may
+    run `./x.py install cargo` or set the `build.extended` key in
+    `config.toml` to `true` to build and install all tools.
+
+[Cargo]: https://github.com/rust-lang/cargo
+
+### Building on Windows
+
+There are two prominent ABIs in use on Windows: the native (MSVC) ABI used by
+Visual Studio and the GNU ABI used by the GCC toolchain. Which version of Rust
+you need depends largely on what C/C++ libraries you want to interoperate with.
+Use the MSVC build of Rust to interop with software produced by Visual Studio and
+the GNU build to interop with GNU software built using the MinGW/MSYS2 toolchain.
+
+#### MinGW
+
+[MSYS2][msys2] can be used to easily build Rust on Windows:
+
+[msys2]: https://www.msys2.org/
+
+1. Download the latest [MSYS2 installer][msys2] and go through the installer.
+
+2. Run `mingw32_shell.bat` or `mingw64_shell.bat` from the MSYS2 installation
+   directory (e.g. `C:\msys64`), depending on whether you want 32-bit or 64-bit
+   Rust. (As of the latest version of MSYS2 you have to run `msys2_shell.cmd
+   -mingw32` or `msys2_shell.cmd -mingw64` from the command line instead)
+
+3. From this terminal, install the required tools:
+
+   ```sh
+   # Update package mirrors (may be needed if you have a fresh install of MSYS2)
+   pacman -Sy pacman-mirrors
+
+   # Install build tools needed for Rust. If you're building a 32-bit compiler,
+   # then replace "x86_64" below with "i686". If you've already got git, python,
+   # or CMake installed and in PATH you can remove them from this list. Note
+   # that it is important that you do **not** use the 'python2', 'cmake' and 'ninja'
+   # packages from the 'msys2' subsystem. The build has historically been known
+   # to fail with these packages.
+   pacman -S git \
+               make \
+               diffutils \
+               tar \
+               mingw-w64-x86_64-python \
+               mingw-w64-x86_64-cmake \
+               mingw-w64-x86_64-gcc \
+               mingw-w64-x86_64-ninja
+   ```
+
+4. Navigate to Rust's source code (or clone it), then build it:
+
+   ```sh
+   ./x.py build && ./x.py install
+   ```
+
+#### MSVC
+
+MSVC builds of Rust additionally require an installation of Visual Studio 2017
+(or later) so `rustc` can use its linker.  The simplest way is to get
+[Visual Studio], check the “C++ build tools” and “Windows 10 SDK” workload.
+
+[Visual Studio]: https://visualstudio.microsoft.com/downloads/
+
+(If you're installing cmake yourself, be careful that “C++ CMake tools for
+Windows” doesn't get included under “Individual components”.)
+
+With these dependencies installed, you can build the compiler in a `cmd.exe`
+shell with:
+
+```sh
+python x.py build
+```
+
+Right now, building Rust only works with some known versions of Visual Studio. If
+you have a more recent version installed and the build system doesn't understand,
+you may need to force rustbuild to use an older version. This can be done
+by manually calling the appropriate vcvars file before running the bootstrap.
+
+```batch
+CALL "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+python x.py build
+```
+
+#### Specifying an ABI
+
+Each specific ABI can also be used from either environment (for example, using
+the GNU ABI in PowerShell) by using an explicit build triple. The available
+Windows build triples are:
+- GNU ABI (using GCC)
+    - `i686-pc-windows-gnu`
+    - `x86_64-pc-windows-gnu`
+- The MSVC ABI
+    - `i686-pc-windows-msvc`
+    - `x86_64-pc-windows-msvc`
+
+The build triple can be specified by either specifying `--build=<triple>` when
+invoking `x.py` commands, or by copying the `config.toml` file (as described
+in [Installing From Source](#installing-from-source)), and modifying the
+`build` option under the `[build]` section.
+
+### Configure and Make
+
+While it's not the recommended build system, this project also provides a
+configure script and makefile (the latter of which just invokes `x.py`).
+
+```sh
+./configure
+make && sudo make install
+```
+
+When using the configure script, the generated `config.mk` file may override the
+`config.toml` file. To go back to the `config.toml` file, delete the generated
+`config.mk` file.
+
+## Building Documentation
+
+If you’d like to build the documentation, it’s almost the same:
+
+```sh
+./x.py doc
+```
+
+The generated documentation will appear under `doc` in the `build` directory for
+the ABI used. I.e., if the ABI was `x86_64-pc-windows-msvc`, the directory will be
+`build\x86_64-pc-windows-msvc\doc`.
+
+## Notes
+
+Since the Rust compiler is written in Rust, it must be built by a
+precompiled "snapshot" version of itself (made in an earlier stage of
+development). As such, source builds require an Internet connection to
+fetch snapshots, and an OS that can execute the available snapshot binaries.
+
+Snapshot binaries are currently built and tested on several platforms:
+
+| Platform / Architecture                     | x86 | x86_64 |
+|---------------------------------------------|-----|--------|
+| Windows (7, 8, 10, ...)                     | ✓   | ✓      |
+| Linux (kernel 3.2, glibc 2.17 or later)     | ✓   | ✓      |
+| macOS (10.7 Lion or later)                  | (\*) | ✓      |
+
+(\*): Apple dropped support for running 32-bit binaries starting from macOS 10.15 and iOS 11.
+Due to this decision from Apple, the targets are no longer useful to our users.
+Please read [our blog post][macx32] for more info.
+
+[macx32]: https://blog.rust-lang.org/2020/01/03/reducing-support-for-32-bit-apple-targets.html
+
+You may find that other platforms work, but these are our officially
+supported build environments that are most likely to work.
+
+## Getting Help
+
+The Rust community congregates in a few places:
+
+* [Stack Overflow] - Direct questions about using the language.
+* [users.rust-lang.org] - General discussion and broader questions.
+* [/r/rust] - News and general discussion.
+
+[Stack Overflow]: https://stackoverflow.com/questions/tagged/rust
+[/r/rust]: https://reddit.com/r/rust
+[users.rust-lang.org]: https://users.rust-lang.org/
+
+## Contributing
+
+If you are interested in contributing to the Rust project, please take a look
+at the [Getting Started][gettingstarted] guide in the [rustc-dev-guide].
+
+[rustc-dev-guide]: https://rustc-dev-guide.rust-lang.org
 
 ## License
 
-Rustfmt is distributed under the terms of both the MIT license and the
-Apache License (Version 2.0).
+Rust is primarily distributed under the terms of both the MIT license
+and the Apache License (Version 2.0), with portions covered by various
+BSD-like licenses.
 
-See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) for details.
+See [LICENSE-APACHE](LICENSE-APACHE), [LICENSE-MIT](LICENSE-MIT), and
+[COPYRIGHT](COPYRIGHT) for details.
 
-[rust]: https://github.com/rust-lang/rust
-[fmt rfcs]: https://github.com/rust-dev-tools/fmt-rfcs
-[style guide]: https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/guide.md
+## Trademark
+
+[The Rust Foundation][rust-foundation] owns and protects the Rust and Cargo
+trademarks and logos (the “Rust Trademarks”).
+
+If you want to use these names or brands, please read the [media guide][media-guide].
+
+Third-party logos may be subject to third-party copyrights and trademarks. See
+[Licenses][policies-licenses] for details.
+
+[rust-foundation]: https://foundation.rust-lang.org/
+[media-guide]: https://www.rust-lang.org/policies/media-guide
+[policies-licenses]: https://www.rust-lang.org/policies/licenses
